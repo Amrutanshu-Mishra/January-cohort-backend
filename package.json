@@ -1,0 +1,27 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Amrutanshu-Mishra/January-cohort-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Amrutanshu-Mishra/January-cohort-backend/issues"
+  },
+  "homepage": "https://github.com/Amrutanshu-Mishra/January-cohort-backend#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "mongoose": "^9.1.4"
+  }
+}
