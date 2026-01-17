@@ -2,11 +2,16 @@ import express from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { clerkMiddleware } from '@clerk/express';
+import { connectDB } from './db/db.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Import webhook routes (must be before json middleware for raw body)
+import webhookRoutes from './routes/webhook.routes.js';
+app.use('/api/webhooks', webhookRoutes);
 
 app.use(express.json());
 
@@ -26,15 +31,24 @@ app.use((req, res, next) => {
 app.use(clerkMiddleware());
 
 // Database Connection
-mongoose.connect(process.env.MONGO_URI || '')
-     .then(() => console.log('MongoDB connected'))
-     .catch(err => console.error('MongoDB connection error:', err));
+// Database Connection
+connectDB();
 
 // Import routes
 import exampleRoutes from './routes/example.routes.js';
+import userRoutes from './routes/user.routes.js';
+import companyRoutes from './routes/company.routes.js';
+import jobRoutes from './routes/job.routes.js';
+import analysisRoutes from './routes/analysis.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
 
 // Use routes
 app.use('/api', exampleRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/companies', companyRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/analysis', analysisRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Test Route
 app.get('/', (req, res) => {
@@ -43,10 +57,11 @@ app.get('/', (req, res) => {
 
 // Protected Route Example
 app.get('/protected', (req, res) => {
-     if (!req.auth.userId) {
+     const { userId } = req.auth();
+     if (!userId) {
           return res.status(401).json({ error: "Unauthorized" });
      }
-     res.json({ message: "This is a protected route", userId: req.auth.userId });
+     res.json({ message: "This is a protected route", userId: userId });
 });
 
 app.listen(PORT, () => {

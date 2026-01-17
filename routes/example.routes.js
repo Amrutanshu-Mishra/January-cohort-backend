@@ -10,9 +10,10 @@ router.get('/public', (req, res) => {
 
 // Protected route using the custom middleware
 router.get('/private', requireAuth, (req, res) => {
+     const { userId } = req.auth();
      res.json({
           message: "This is a private endpoint.",
-          userId: req.auth.userId
+          userId: userId
      });
 });
 

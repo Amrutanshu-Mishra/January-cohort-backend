@@ -2,7 +2,9 @@ import { clerkClient } from '@clerk/express';
 
 // Middleware to ensure the user is authenticated
 export const requireAuth = (req, res, next) => {
-  if (!req.auth.userId) {
+  const { userId } = req.auth();
+
+  if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
   next();
@@ -10,11 +12,12 @@ export const requireAuth = (req, res, next) => {
 
 // Optional: Middleware to fetch full user details from Clerk if needed
 export const attachUser = async (req, res, next) => {
-  if (!req.auth.userId) {
+  const { userId } = req.auth();
+  if (!userId) {
     return next();
   }
   try {
-    const user = await clerkClient.users.getUser(req.auth.userId);
+    const user = await clerkClient.users.getUser(userId);
     req.user = user;
     next();
   } catch (error) {
