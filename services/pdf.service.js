@@ -21,6 +21,7 @@ export const extractPDFText = async (url) => {
                     try {
                          const buffer = Buffer.concat(chunks);
                          const data = await pdf(buffer);
+                         console.log(data);
                          resolve(data.text);
                     } catch (error) {
                          reject(error);
