@@ -18,9 +18,15 @@ export const uploadResume = async (req, res) => {
           if (userId) {
                const u = await User.findOneAndUpdate(
                     { clerkId: userId },
-                    { $set: { resume: fileUrl } }
+                    { $set: { resume: fileUrl } },
+                    { new: true } // Return the updated document instead of the original
                );
-               console.log(u);
+
+               if (!u) {
+                    console.warn(`User with clerkId ${userId} not found in database. Resume uploaded but user profile not updated.`);
+               } else {
+                    console.log('User updated successfully:', { clerkId: u.clerkId, email: u.email, resume: u.resume });
+               }
           }
 
           res.status(200).json({
