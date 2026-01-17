@@ -14,11 +14,13 @@ export const uploadResume = async (req, res) => {
 
           // Update user profile with the new resume URL
           // Doing this automatically saves the step of the frontend making a separate call
+          console.log("userId", userId);
           if (userId) {
-               await User.findOneAndUpdate(
+               const u = await User.findOneAndUpdate(
                     { clerkId: userId },
                     { $set: { resume: fileUrl } }
                );
+               console.log(u);
           }
 
           res.status(200).json({

@@ -15,6 +15,7 @@ export const analyzeResume = async (userProfile) => {
 
     // Extract resume text if URL is provided
     let resumeText = '';
+    console.log(userProfile);
     if (userProfile.resume) {
       try {
         console.log('Extracting PDF from:', userProfile.resume);
