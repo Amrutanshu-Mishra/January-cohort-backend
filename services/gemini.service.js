@@ -229,6 +229,58 @@ IMPORTANT: Return ONLY valid JSON, no additional text.`;
 };
 
 /**
+ * Generate job description from a prompt
+ */
+export const generateJobDescription = async (userPrompt) => {
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+
+    const prompt = buildDescriptionPrompt(userPrompt);
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    const data = parseGeminiResponse(text);
+
+    return {
+      success: true,
+      data
+    };
+  } catch (error) {
+    console.error('Error generating job description:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Build job description generation prompt
+ */
+const buildDescriptionPrompt = (userPrompt) => {
+  return `You are an expert HR specialist and technical recruiter. Create a professional job posting based on the following request: "${userPrompt}"
+
+  Task: Generate a structured job description in valid JSON format.
+  
+  Output Schema:
+  {
+    "title": "Professional Job Title",
+    "description": "Engaging job description (3-4 paragraphs)",
+    "requirements": ["Requirement 1", "Requirement 2", ...],
+    "location": "City, Country or Remote",
+    "type": "Full-time|Part-time|Contract|Internship",
+    "experienceLevel": "Entry|Mid|Senior|Executive",
+    "salary": "Range (e.g. $80k - $120k)"
+  }
+
+  Ensure the tone is professional yet attracting. If details like location or salary are not mentioned in the prompt, infer reasonable defaults or use "Remote" and "Competitive".
+
+  IMPORTANT: Return ONLY valid JSON.`;
+};
+
+/**
  * Parse Gemini response (extract JSON)
  */
 const parseGeminiResponse = (text) => {

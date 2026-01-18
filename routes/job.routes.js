@@ -13,7 +13,8 @@ import {
      getJobApplicants,
      getAllCompanyApplicants,
      updateApplicantStatus,
-     getCompanyStats
+     getCompanyStats,
+     generateDescription
 } from '../controllers/job.controller.js';
 
 const router = express.Router();
@@ -27,6 +28,7 @@ router.post('/:id/evaluate-gap', requireAuth, evaluateSkillGap);
 router.post('/:id/apply', requireAuth, applyToJob);
 
 // Company-only routes
+router.post('/generate-description', requireCompanyAuth, generateDescription);
 router.post('/', requireCompanyAuth, createJob);
 router.put('/:id', requireCompanyAuth, updateJob);
 router.delete('/:id', requireCompanyAuth, deleteJob);

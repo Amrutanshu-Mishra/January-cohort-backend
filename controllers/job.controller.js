@@ -45,6 +45,32 @@ export const createJob = async (req, res) => {
 };
 
 
+// Generate job description using AI (company auth required)
+export const generateDescription = async (req, res) => {
+     try {
+          const { prompt } = req.body;
+
+          if (!prompt) {
+               return res.status(400).json({ message: "Prompt is required" });
+          }
+
+          // Dynamic import to avoid circular dependency issues if any
+          const { generateJobDescription } = await import('../services/gemini.service.js');
+
+          const result = await generateJobDescription(prompt);
+
+          if (!result.success) {
+               return res.status(500).json({ message: "Failed to generate description", error: result.error });
+          }
+
+          res.status(200).json({ data: result.data });
+     } catch (error) {
+          console.error("Error generating description:", error);
+          res.status(500).json({ message: "Error generating description", error: error.message });
+     }
+};
+
+
 // Get all jobs (public)
 export const getJobs = async (req, res) => {
      try {
