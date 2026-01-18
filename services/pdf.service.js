@@ -1,8 +1,9 @@
-import { PDFParse } from 'pdf-parse';
+import pdf from 'pdf-parse';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import https from 'https';
 import http from 'http';
 import dotenv from 'dotenv';
+import { URL } from 'url';
 
 dotenv.config();
 
@@ -84,12 +85,11 @@ export const extractPDFText = async (url) => {
 
           console.log('Downloaded PDF, size:', buffer.length, 'bytes');
 
-          // pdf-parse v2 API - use PDFParse class with buffer
-          const parser = new PDFParse({ data: buffer });
-          const result = await parser.getText();
+          // pdf-parse v1.1.1 API - default export function
+          const data = await pdf(buffer);
 
-          console.log('PDF extraction successful, text length:', result.text?.length || 0);
-          return result.text;
+          console.log('PDF extraction successful, text length:', data.text?.length || 0);
+          return data.text;
      } catch (error) {
           console.error('Error extracting PDF text:', error);
           throw error;
