@@ -174,11 +174,128 @@ export const getCompanyJobs = async (req, res) => {
      }
 };
 
+// Evaluate skill gap for a job before applying (user auth required)
+export const evaluateSkillGap = async (req, res) => {
+     try {
+          const { userId } = req.auth();
+          const { id } = req.params;
+
+          if (!userId) {
+               return res.status(401).json({ message: "Unauthorized" });
+          }
+
+          // Import services
+          const User = (await import('../models/User.js')).default;
+          const { analyzeSkillGap } = await import('../services/gemini.service.js');
+
+          // Find the user
+          const user = await User.findOne({ clerkId: userId });
+          if (!user) {
+               return res.status(404).json({ message: "User not found. Please complete your profile first." });
+          }
+
+          // Check if user has a resume
+          if (!user.resume) {
+               return res.status(400).json({
+                    message: "Please upload your resume first before applying.",
+                    requiresResume: true
+               });
+          }
+
+          // Find the job
+          const job = await Job.findById(id);
+          if (!job) {
+               return res.status(404).json({ message: "Job not found" });
+          }
+
+          // Check if already applied
+          const alreadyApplied = job.applicants?.some(
+               app => app.userId?.toString() === user._id.toString()
+          );
+
+          if (alreadyApplied) {
+               return res.status(400).json({ message: "You have already applied to this job" });
+          }
+
+          // Perform skill gap analysis
+          // Pass resumeAnalysis if available, or null if not analyzed yet
+          const result = await analyzeSkillGap(user, job, user.resumeAnalysis || null);
+
+          if (!result.success) {
+               console.error("Skill gap analysis failed:", result.error);
+               return res.status(500).json({
+                    message: "Unable to analyze skill gap. Please try again later.",
+                    error: result.error
+               });
+          }
+
+          const { matchPercentage, matchSummary, criticalGaps, recommendedActions, timelineAssessment, strengths, proficiencyGaps } = result.analysis;
+
+          // Define threshold for significant skill gap (60% or less)
+          const SKILL_GAP_THRESHOLD = 60;
+          const hasSignificantGap = matchPercentage < SKILL_GAP_THRESHOLD;
+
+          // Store analysis in user's target jobs
+          let targetJob = user.targetJobs?.find(tj => tj.jobId === id);
+          if (!targetJob) {
+               user.targetJobs.push({
+                    jobId: id,
+                    title: job.title,
+                    description: job.description,
+                    company: job.companyName,
+                    analysisStatus: 'Completed',
+                    matchPercentage,
+                    matchSummary,
+                    strengths,
+                    criticalGaps,
+                    proficiencyGaps,
+                    recommendedActions,
+                    timelineAssessment,
+                    analyzedAt: new Date()
+               });
+          } else {
+               targetJob.analysisStatus = 'Completed';
+               targetJob.matchPercentage = matchPercentage;
+               targetJob.matchSummary = matchSummary;
+               targetJob.strengths = strengths;
+               targetJob.criticalGaps = criticalGaps;
+               targetJob.proficiencyGaps = proficiencyGaps;
+               targetJob.recommendedActions = recommendedActions;
+               targetJob.timelineAssessment = timelineAssessment;
+               targetJob.analyzedAt = new Date();
+          }
+          await user.save();
+
+          // Reload user to get the updated target job with _id
+          const updatedUser = await User.findOne({ clerkId: userId });
+          const savedTargetJob = updatedUser.targetJobs?.find(tj => tj.jobId === id);
+
+          res.status(200).json({
+               hasSignificantGap,
+               matchPercentage,
+               matchSummary,
+               strengths,
+               criticalGaps,
+               proficiencyGaps,
+               recommendedActions,
+               timelineAssessment,
+               jobId: id,
+               jobTitle: job.title,
+               companyName: job.companyName,
+               targetJobId: savedTargetJob?._id
+          });
+     } catch (error) {
+          console.error("Error evaluating skill gap:", error);
+          res.status(500).json({ message: "Error evaluating skill gap", error: error.message });
+     }
+};
+
 // Apply to a job (user auth required)
 export const applyToJob = async (req, res) => {
      try {
           const { userId } = req.auth();
           const { id } = req.params;
+          const { skipGapCheck } = req.body; // Allow skipping gap check if already reviewed roadmap
 
           if (!userId) {
                return res.status(401).json({ message: "Unauthorized" });
@@ -219,7 +336,7 @@ export const applyToJob = async (req, res) => {
           });
           await job.save();
 
-          // Also add this job to user's target jobs for skill gap analysis
+          // Also add this job to user's target jobs if not exists
           const existingTargetJob = user.targetJobs?.find(
                tj => tj.jobId === id
           );

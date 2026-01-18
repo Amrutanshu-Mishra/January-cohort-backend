@@ -9,6 +9,7 @@ import {
      deleteJob,
      getCompanyJobs,
      applyToJob,
+     evaluateSkillGap,
      getJobApplicants,
      getAllCompanyApplicants,
      updateApplicantStatus,
@@ -22,6 +23,7 @@ router.get('/', getJobs);
 router.get('/:id', getJobById);
 
 // User routes (authenticated users)
+router.post('/:id/evaluate-gap', requireAuth, evaluateSkillGap);
 router.post('/:id/apply', requireAuth, applyToJob);
 
 // Company-only routes

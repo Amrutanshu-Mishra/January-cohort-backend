@@ -54,26 +54,34 @@ export const analyzeResume = async (userProfile) => {
  */
 export const analyzeSkillGap = async (userProfile, job, resumeAnalysis) => {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    console.log('Starting skill gap analysis for job:', job?.title);
+    console.log('User skills:', userProfile?.skills);
+    console.log('Has resume analysis:', !!resumeAnalysis);
+
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     const prompt = buildGapAnalysisPrompt(userProfile, job, resumeAnalysis);
 
+    console.log('Sending prompt to Gemini...');
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
 
+    console.log('Received response from Gemini, parsing...');
     // Parse JSON from response
     const analysis = parseGeminiResponse(text);
 
+    console.log('Skill gap analysis completed. Match:', analysis.matchPercentage);
     return {
       success: true,
       analysis
     };
   } catch (error) {
     console.error('Error analyzing skill gap:', error);
+    console.error('Error stack:', error.stack);
     return {
       success: false,
-      error: error.message
+      error: error.message || 'Unknown error during skill gap analysis'
     };
   }
 };
