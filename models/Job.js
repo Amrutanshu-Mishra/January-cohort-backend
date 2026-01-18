@@ -9,6 +9,10 @@ const JobSchema = new Schema({
           required: true,
           index: true
      },
+     companyName: {
+          type: String,
+          required: false
+     },
      title: {
           type: String,
           required: true
@@ -27,7 +31,7 @@ const JobSchema = new Schema({
      type: {
           type: String,
           enum: ['Full-time', 'Part-time', 'Contract', 'Internship'],
-          required: false
+          default: 'Full-time'
      },
      experienceLevel: {
           type: String,
@@ -35,6 +39,10 @@ const JobSchema = new Schema({
           required: false
      },
      salary: {
+          type: String,
+          required: false
+     },
+     salaryRange: {
           min: {
                type: Number,
                required: false
@@ -52,6 +60,27 @@ const JobSchema = new Schema({
           type: String,
           enum: ['Active', 'Closed', 'Draft'],
           default: 'Active'
+     },
+     // Track applicants who have applied
+     applicants: [{
+          userId: {
+               type: Schema.Types.ObjectId,
+               ref: 'User'
+          },
+          appliedAt: {
+               type: Date,
+               default: Date.now
+          },
+          status: {
+               type: String,
+               enum: ['Applied', 'Reviewed', 'Shortlisted', 'Rejected', 'Hired'],
+               default: 'Applied'
+          }
+     }],
+     // Analytics
+     views: {
+          type: Number,
+          default: 0
      },
      postedBy: {
           type: Schema.Types.ObjectId,

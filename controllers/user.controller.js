@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import { clerkClient } from '@clerk/express';
 
 // Sync user from Clerk to MongoDB
 export const syncUser = async (req, res) => {
@@ -9,32 +10,61 @@ export const syncUser = async (req, res) => {
                return res.status(401).json({ message: "Unauthorized" });
           }
 
-          // Get user info from Clerk (available in req.auth())
-          const { sessionClaims } = req.auth();
-          const email = sessionClaims?.email || sessionClaims?.primaryEmail;
-
           // Check if user already exists
           let user = await User.findOne({ clerkId: userId });
 
           if (!user) {
+               // Fetch user info from Clerk API
+               let clerkUser;
+               try {
+                    clerkUser = await clerkClient.users.getUser(userId);
+               } catch (clerkError) {
+                    console.error("Error fetching user from Clerk:", clerkError);
+                    return res.status(500).json({ message: "Could not fetch user info" });
+               }
+
+               const email = clerkUser.emailAddresses?.find(e => e.id === clerkUser.primaryEmailAddressId)?.emailAddress;
+               const fullName = `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim();
+
+               if (!email) {
+                    return res.status(400).json({ message: "User email not found" });
+               }
+
                // Create new user
                user = await User.create({
                     clerkId: userId,
                     email: email,
-                    fullName: sessionClaims?.fullName || '',
-                    username: sessionClaims?.username || ''
+                    fullName: fullName,
+                    username: clerkUser.username || '',
+                    role: 'user'
                });
+
+               // Sync with Clerk: Set role to 'user' in publicMetadata
+               try {
+                    await clerkClient.users.updateUserMetadata(userId, {
+                         publicMetadata: {
+                              role: 'user',
+                              userId: user._id.toString()
+                         }
+                    });
+               } catch (clerkError) {
+                    console.error("Error updating Clerk metadata:", clerkError);
+                    // Continue - we don't want to fail the whole request if just metadata fails
+               }
           }
 
           res.status(200).json({
                message: "User synced successfully",
-               user
+               user,
+               role: 'user'
           });
      } catch (error) {
           console.error("Error syncing user:", error);
           res.status(500).json({ message: "Error syncing user", error: error.message });
      }
 };
+
+
 
 // Update user profile
 export const updateProfile = async (req, res) => {

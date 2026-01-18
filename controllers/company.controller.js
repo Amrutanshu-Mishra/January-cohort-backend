@@ -10,8 +10,19 @@ export const registerCompany = async (req, res) => {
                return res.status(401).json({ message: "Unauthorized" });
           }
 
-          const { sessionClaims } = req.auth();
-          const email = sessionClaims?.email || sessionClaims?.primaryEmail;
+          // Fetch user from Clerk to get email
+          let email;
+          try {
+               const clerkUser = await clerkClient.users.getUser(userId);
+               email = clerkUser.emailAddresses?.find(e => e.id === clerkUser.primaryEmailAddressId)?.emailAddress;
+          } catch (clerkError) {
+               console.error("Error fetching user from Clerk:", clerkError);
+               return res.status(500).json({ message: "Could not fetch user email" });
+          }
+
+          if (!email) {
+               return res.status(400).json({ message: "User email not found" });
+          }
 
           // Check if company already exists
           let company = await Company.findOne({ clerkId: userId });
@@ -50,7 +61,7 @@ export const registerCompany = async (req, res) => {
                await clerkClient.users.updateUserMetadata(userId, {
                     publicMetadata: {
                          role: 'company',
-                         companyId: company._id
+                         companyId: company._id.toString()
                     }
                });
           } catch (clerkError) {
@@ -67,6 +78,7 @@ export const registerCompany = async (req, res) => {
           res.status(500).json({ message: "Error registering company", error: error.message });
      }
 };
+
 
 // Get company profile
 export const getCompanyProfile = async (req, res) => {

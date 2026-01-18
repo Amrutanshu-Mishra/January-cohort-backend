@@ -89,6 +89,17 @@ const UserSchema = new Schema({
           type: String,
           required: false
      },
+     // Role field to differentiate users
+     role: {
+          type: String,
+          enum: ['user', 'company'],
+          default: 'user'
+     },
+     // Track if user has completed onboarding
+     profileCompleted: {
+          type: Boolean,
+          default: false
+     },
      // Professional Profile
      resume: {
           type: String,
