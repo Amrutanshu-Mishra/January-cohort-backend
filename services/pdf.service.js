@@ -1,4 +1,4 @@
-import pdf from 'pdf-parse';
+import PDFParser from 'pdf2json';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import https from 'https';
 import http from 'http';
@@ -85,11 +85,23 @@ export const extractPDFText = async (url) => {
 
           console.log('Downloaded PDF, size:', buffer.length, 'bytes');
 
-          // pdf-parse v1.1.1 API - default export function
-          const data = await pdf(buffer);
+          // Parse using pdf2json
+          return new Promise((resolve, reject) => {
+               const pdfParser = new PDFParser(this, 1); // 1 = raw text content
 
-          console.log('PDF extraction successful, text length:', data.text?.length || 0);
-          return data.text;
+               pdfParser.on("pdfParser_dataError", (errData) => {
+                    console.error("PDF Parser Error:", errData.parserError);
+                    reject(errData.parserError);
+               });
+
+               pdfParser.on("pdfParser_dataReady", (pdfData) => {
+                    const text = pdfParser.getRawTextContent();
+                    console.log('PDF extraction successful, text length:', text?.length || 0);
+                    resolve(text);
+               });
+
+               pdfParser.parseBuffer(buffer);
+          });
      } catch (error) {
           console.error('Error extracting PDF text:', error);
           throw error;

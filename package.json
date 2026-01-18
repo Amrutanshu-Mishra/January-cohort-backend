@@ -31,7 +31,7 @@
     "express": "^5.2.1",
     "mongoose": "^9.1.4",
     "multer": "^2.0.2",
-    "pdf-parse": "1.1.1",
+    "pdf2json": "^3.2.2",
     "svix": "^1.84.1"
   },
   "devDependencies": {
