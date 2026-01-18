@@ -64,6 +64,11 @@ app.get('/protected', (req, res) => {
      res.json({ message: "This is a protected route", userId: userId });
 });
 
-app.listen(PORT, () => {
-     console.log(`Server running on port ${PORT}`);
-});
+// Only listen if not running on Vercel (Vercel exports the app)
+if (process.env.NODE_ENV !== 'production') {
+     app.listen(PORT, () => {
+          console.log(`Server running on port ${PORT}`);
+     });
+}
+
+export default app;
